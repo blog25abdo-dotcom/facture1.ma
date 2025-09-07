@@ -26,6 +26,7 @@ import AdminLogin from './components/admin/AdminLogin';
 import AdminDashboard from './components/admin/AdminDashboard';
 import StockManagement from './components/stock/StockManagement';
 import HRManagement from './components/hr/HRManagement';
+import SuppliersManagement from './components/suppliers/SuppliersManagement';
 
 function AppContent() {
   const { user, isAuthenticated, showExpiryAlert, setShowExpiryAlert, expiredDate } = useAuth();
@@ -67,6 +68,7 @@ function AppContent() {
             <Route path="/quotes/create" element={<CreateQuote />} />
             <Route path="/clients" element={<ClientsList />} />
             <Route path="/products" element={<ProductsList />} />
+            <Route path="/suppliers" element={<SuppliersManagement />} />
             <Route path="/stock-management" element={<StockManagement />} />
             <Route path="/hr-management" element={<HRManagement />} />
             <Route path="/reports" element={<Reports />} />

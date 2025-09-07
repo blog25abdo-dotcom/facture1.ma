@@ -183,7 +183,7 @@ export default function AddProductModal({ isOpen, onClose }: AddProductModalProp
           
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
-              Stock initial
+              Stock initial (optionnel)
             </label>
             <input
               type="number"

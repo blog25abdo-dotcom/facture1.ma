@@ -139,6 +139,40 @@ export interface Leave {
   createdAt: string;
   entrepriseId: string;
 }
+
+export interface Supplier {
+  id: string;
+  name: string;
+  ice: string;
+  rc: string;
+  if: string;
+  address: string;
+  phone: string;
+  email: string;
+  website: string;
+  contactPerson: string;
+  paymentTerms: number;
+  category: string;
+  status: 'active' | 'inactive';
+  createdAt: string;
+  entrepriseId: string;
+}
+
+export interface SupplierPayment {
+  id: string;
+  supplierId: string;
+  supplier: Supplier;
+  amount: number;
+  date: string;
+  method: 'virement' | 'cheque' | 'espece' | 'effet';
+  reference: string;
+  description: string;
+  invoiceNumber: string;
+  category: 'purchase' | 'service' | 'equipment' | 'maintenance' | 'other';
+  createdAt: string;
+  entrepriseId: string;
+}
+
 interface DataContextType {
   clients: Client[];
   products: Product[];
@@ -147,6 +181,8 @@ interface DataContextType {
   employees: Employee[];
   overtimes: Overtime[];
   leaves: Leave[];
+  suppliers: Supplier[];
+  supplierPayments: SupplierPayment[];
   addClient: (client: Omit<Client, 'id' | 'createdAt' | 'entrepriseId'>) => Promise<void>;
   updateClient: (id: string, client: Partial<Client>) => Promise<void>;
   deleteClient: (id: string) => Promise<void>;
@@ -175,6 +211,13 @@ interface DataContextType {
   getInvoiceById: (id: string) => Invoice | undefined;
   getQuoteById: (id: string) => Quote | undefined;
   getEmployeeById: (id: string) => Employee | undefined;
+  addSupplier: (supplier: Omit<Supplier, 'id' | 'createdAt' | 'entrepriseId'>) => Promise<void>;
+  updateSupplier: (id: string, supplier: Partial<Supplier>) => Promise<void>;
+  deleteSupplier: (id: string) => Promise<void>;
+  addSupplierPayment: (payment: Omit<SupplierPayment, 'id' | 'createdAt' | 'entrepriseId'>) => Promise<void>;
+  updateSupplierPayment: (id: string, payment: Partial<SupplierPayment>) => Promise<void>;
+  deleteSupplierPayment: (id: string) => Promise<void>;
+  getSupplierById: (id: string) => Supplier | undefined;
   isLoading: boolean;
 }
 
@@ -189,6 +232,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [overtimes, setOvertimes] = useState<Overtime[]>([]);
   const [leaves, setLeaves] = useState<Leave[]>([]);
+  const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [supplierPayments, setSupplierPayments] = useState<SupplierPayment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // Écouter les changements en temps réel
@@ -289,6 +334,33 @@ export function DataProvider({ children }: { children: ReactNode }) {
       } as Leave)).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       setLeaves(leavesData);
     });
+
+    // Fournisseurs
+    const suppliersQuery = query(
+      collection(db, 'suppliers'),
+      where('entrepriseId', '==', entrepriseId)
+    );
+    const unsubscribeSuppliers = onSnapshot(suppliersQuery, (snapshot) => {
+      const suppliersData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as Supplier)).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setSuppliers(suppliersData);
+    });
+
+    // Paiements fournisseurs
+    const supplierPaymentsQuery = query(
+      collection(db, 'supplierPayments'),
+      where('entrepriseId', '==', entrepriseId)
+    );
+    const unsubscribeSupplierPayments = onSnapshot(supplierPaymentsQuery, (snapshot) => {
+      const paymentsData = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      } as SupplierPayment)).sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      setSupplierPayments(paymentsData);
+    });
+
     return () => {
       unsubscribeClients();
       unsubscribeProducts();
@@ -297,6 +369,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
       unsubscribeEmployees();
       unsubscribeOvertimes();
       unsubscribeLeaves();
+      unsubscribeSuppliers();
+      unsubscribeSupplierPayments();
     };
   }, [isAuthenticated, user]);
 
@@ -656,6 +730,77 @@ export function DataProvider({ children }: { children: ReactNode }) {
       console.error('Erreur lors de la suppression du congé:', error);
     }
   };
+
+  // Fournisseurs
+  const addSupplier = async (supplierData: Omit<Supplier, 'id' | 'createdAt' | 'entrepriseId'>) => {
+    if (!user) return;
+    
+    try {
+      await addDoc(collection(db, 'suppliers'), {
+        ...supplierData,
+        entrepriseId: user.id,
+        createdAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout du fournisseur:', error);
+    }
+  };
+
+  const updateSupplier = async (id: string, supplierData: Partial<Supplier>) => {
+    try {
+      await updateDoc(doc(db, 'suppliers', id), {
+        ...supplierData,
+        updatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour du fournisseur:', error);
+    }
+  };
+
+  const deleteSupplier = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'suppliers', id));
+    } catch (error) {
+      console.error('Erreur lors de la suppression du fournisseur:', error);
+    }
+  };
+
+  const getSupplierById = (id: string) => suppliers.find(supplier => supplier.id === id);
+
+  // Paiements fournisseurs
+  const addSupplierPayment = async (paymentData: Omit<SupplierPayment, 'id' | 'createdAt' | 'entrepriseId'>) => {
+    if (!user) return;
+    
+    try {
+      await addDoc(collection(db, 'supplierPayments'), {
+        ...paymentData,
+        entrepriseId: user.id,
+        createdAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Erreur lors de l\'ajout du paiement:', error);
+    }
+  };
+
+  const updateSupplierPayment = async (id: string, paymentData: Partial<SupplierPayment>) => {
+    try {
+      await updateDoc(doc(db, 'supplierPayments', id), {
+        ...paymentData,
+        updatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour du paiement:', error);
+    }
+  };
+
+  const deleteSupplierPayment = async (id: string) => {
+    try {
+      await deleteDoc(doc(db, 'supplierPayments', id));
+    } catch (error) {
+      console.error('Erreur lors de la suppression du paiement:', error);
+    }
+  };
+
   const value = {
     clients,
     products,
@@ -664,6 +809,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
     employees,
     overtimes,
     leaves,
+    suppliers,
+    supplierPayments,
     addClient,
     updateClient,
     deleteClient,
@@ -692,6 +839,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
     getInvoiceById,
     getQuoteById,
     getEmployeeById,
+    addSupplier,
+    updateSupplier,
+    deleteSupplier,
+    addSupplierPayment,
+    updateSupplierPayment,
+    deleteSupplierPayment,
+    getSupplierById,
     updateInvoiceStatus: updateInvoice,
     isLoading,
   };
@@ -710,4 +864,3 @@ export function useData() {
   }
   return context;
 }
-

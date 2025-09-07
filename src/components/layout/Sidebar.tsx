@@ -15,7 +15,8 @@ import {
   ChevronRight,
   FileCheck,
   TrendingUp,
-  UserCheck
+  UserCheck,
+  Truck
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -48,6 +49,12 @@ export default function Sidebar({ open, setOpen, onUpgrade }: SidebarProps) {
     { icon: FileCheck, label: 'Devis', path: '/quotes' },
     { icon: Users, label: t('clients'), path: '/clients' },
     { icon: Package, label: t('products'), path: '/products' },
+    { 
+      icon: Truck, 
+      label: 'Fournisseurs', 
+      path: '/suppliers',
+      isPro: true 
+    },
     { 
       icon: TrendingUp, 
       label: 'Gestion de Stock', 
